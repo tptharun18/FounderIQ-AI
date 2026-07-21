@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
 
 function Deals() {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sectorFilter, setSectorFilter] = useState("All");
 
   useEffect(() => {
     loadDeals();
@@ -13,9 +16,7 @@ function Deals() {
   const loadDeals = async () => {
     try {
       setLoading(true);
-
       const response = await api.get("/dashboard");
-
       setDeals(response.data.deals || []);
     } catch (error) {
       console.error("Error loading deals:", error);
@@ -24,6 +25,32 @@ function Deals() {
       setLoading(false);
     }
   };
+
+  const filteredDeals = useMemo(() => {
+    return deals.filter((deal) => {
+      const nameMatch = (deal.name || "")
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+      const statusMatch =
+        statusFilter === "All" || deal.status === statusFilter;
+
+      const sectorMatch =
+        sectorFilter === "All" || deal.sector === sectorFilter;
+
+      return nameMatch && statusMatch && sectorMatch;
+    });
+  }, [deals, search, statusFilter, sectorFilter]);
+
+  const uniqueStatuses = useMemo(() => {
+    const statuses = new Set(deals.map((d) => d.status).filter(Boolean));
+    return ["All", ...Array.from(statuses)];
+  }, [deals]);
+
+  const uniqueSectors = useMemo(() => {
+    const sectors = new Set(deals.map((d) => d.sector).filter(Boolean));
+    return ["All", ...Array.from(sectors)];
+  }, [deals]);
 
   return (
     <>
@@ -69,9 +96,66 @@ function Deals() {
         </div>
       </div>
 
+      {/* Search and Filters Bar */}
+      <div
+        style={{
+          display: "flex",
+          gap: "20px",
+          marginBottom: "20px",
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search deals..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            flex: 1,
+            padding: "12px",
+            borderRadius: "8px",
+            border: "1px solid #ddd",
+          }}
+        />
+
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{
+            width: "220px",
+            padding: "12px",
+            borderRadius: "8px",
+            border: "1px solid #ddd",
+          }}
+        >
+          <option value="All">All Statuses</option>
+          {uniqueStatuses.filter(s => s !== "All").map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={sectorFilter}
+          onChange={(e) => setSectorFilter(e.target.value)}
+          style={{
+            width: "220px",
+            padding: "12px",
+            borderRadius: "8px",
+            border: "1px solid #ddd",
+          }}
+        >
+          {uniqueSectors.map((sector) => (
+            <option key={sector} value={sector}>
+              {sector}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {loading ? (
         <h2>Loading deals...</h2>
-      ) : deals.length === 0 ? (
+      ) : filteredDeals.length === 0 ? (
         <div
           style={{
             background: "#fff",
@@ -114,7 +198,7 @@ function Deals() {
             </thead>
 
             <tbody>
-              {deals.map((deal) => (
+              {filteredDeals.map((deal) => (
                 <tr
                   key={deal.id}
                   style={{

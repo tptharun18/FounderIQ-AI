@@ -17,6 +17,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [sectorFilter, setSectorFilter] = useState("All");
 
   useEffect(() => {
     fetchDashboard();
@@ -43,9 +44,18 @@ function Dashboard() {
         statusFilter === "All" ||
         deal.status === statusFilter;
 
-      return nameMatch && statusMatch;
+      const sectorMatch =
+        sectorFilter === "All" ||
+        deal.sector === sectorFilter;
+
+      return nameMatch && statusMatch && sectorMatch;
     });
-  }, [dashboard, search, statusFilter]);
+  }, [dashboard, search, statusFilter, sectorFilter]);
+
+  const uniqueSectors = useMemo(() => {
+    const sectors = new Set((dashboard.deals || []).map((d) => d.sector).filter(Boolean));
+    return ["All", ...Array.from(sectors)];
+  }, [dashboard.deals]);
 
   if (loading) {
     return (
@@ -138,9 +148,10 @@ function Dashboard() {
             width: 220,
             padding: 12,
             borderRadius: 8,
+            border: "1px solid #ddd",
           }}
         >
-          <option value="All">All</option>
+          <option value="All">All Statuses</option>
 
           {Object.keys(dashboard.salesPipeline || {}).map(
             (status) => (
@@ -152,6 +163,25 @@ function Dashboard() {
               </option>
             )
           )}
+        </select>
+
+        <select
+          value={sectorFilter}
+          onChange={(e) =>
+            setSectorFilter(e.target.value)
+          }
+          style={{
+            width: 220,
+            padding: 12,
+            borderRadius: 8,
+            border: "1px solid #ddd",
+          }}
+        >
+          {uniqueSectors.map((sector) => (
+            <option key={sector} value={sector}>
+              {sector}
+            </option>
+          ))}
         </select>
       </div>
 
