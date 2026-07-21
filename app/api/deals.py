@@ -23,8 +23,10 @@ def create_deal(deal: DealCreate):
     }
     """
 
+    import os
+    board_id = int(os.getenv("MONDAY_BOARD_ID", "5030102714"))
     variables = {
-        "board": 5030102338,
+        "board": board_id,
         "group": "group_mm5fav3p", # Deal funnel group
         "name": deal.name
     }

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import json
+import os
 
 from app.services.monday_service import MondayService
 
@@ -29,10 +30,10 @@ def get_boards():
 
 @router.get("/deals")
 def get_deals():
-    # Query from the new board 5030102338
+    board_id = int(os.getenv("MONDAY_BOARD_ID", "5030102714"))
     query = """
     query {
-      boards(ids: 5030102338) {
+      boards(ids: %d) {
         id
         name
         columns {
@@ -57,17 +58,15 @@ def get_deals():
         }
       }
     }
-    """
+    """ % board_id
     try:
         result = MondayService.execute_query(query)
         board = result["data"]["boards"][0]
-        # Filter only Deal funnel items
         filtered_items = []
         for item in board["items_page"]["items"]:
             group_id = item.get("group", {}).get("id") or ""
             group_title = item.get("group", {}).get("title") or ""
             if "Deal" in group_title or group_id == "group_mm5fav3p":
-                # Skip header rows
                 if item["name"].lower() not in ["deal name", "deal name masked"]:
                     filtered_items.append(item)
                     
@@ -78,8 +77,7 @@ def get_deals():
 
 @router.post("/deals")
 def create_deal(deal: CreateDealRequest):
-    # Set status value in text column text_mm5fj5gd
-    # Set date in date4 column
+    board_id = int(os.getenv("MONDAY_BOARD_ID", "5030102714"))
     column_values = {
         "text_mm5fj5gd": deal.status,
         "date4": {
@@ -87,7 +85,6 @@ def create_deal(deal: CreateDealRequest):
         } if deal.dueDate else None
     }
 
-    # Remove empty values
     column_values = {
         k: v for k, v in column_values.items() if v is not None
     }
@@ -112,8 +109,8 @@ def create_deal(deal: CreateDealRequest):
     """
 
     variables = {
-        "boardId": 5030102338,
-        "groupId": "group_mm5fav3p", # Deal funnel group
+        "boardId": board_id,
+        "groupId": "group_mm5fav3p",
         "itemName": deal.name,
         "columnValues": json.dumps(column_values)
     }
@@ -130,10 +127,10 @@ def create_deal(deal: CreateDealRequest):
 
 @router.get("/work-orders")
 def get_work_orders():
-    # Query from the new board 5030102338
+    board_id = int(os.getenv("MONDAY_BOARD_ID", "5030102714"))
     query = """
     query {
-      boards(ids: 5030102338) {
+      boards(ids: %d) {
         id
         name
         items_page(limit: 500) {
@@ -153,17 +150,15 @@ def get_work_orders():
         }
       }
     }
-    """
+    """ % board_id
     try:
         result = MondayService.execute_query(query)
         board = result["data"]["boards"][0]
-        # Filter only Work Order items
         filtered_items = []
         for item in board["items_page"]["items"]:
             group_id = item.get("group", {}).get("id") or ""
             group_title = item.get("group", {}).get("title") or ""
             if "Work" in group_title or group_id == "group_mm5fqxrf":
-                # Skip header rows
                 if item["name"].lower() not in ["deal name", "deal name masked"]:
                     filtered_items.append(item)
                     

@@ -15,10 +15,11 @@ class ChatRequest(BaseModel):
     message: str
 
 def fetch_monday_context():
-    # Fetch from the new board 5030102338
+    board_id = int(os.getenv("MONDAY_BOARD_ID", "5030102714"))
+    # Fetch from the new board
     query = """
     query {
-      boards(ids: 5030102338) {
+      boards(ids: %d) {
         name
         items_page(limit: 500) {
           items {
@@ -36,7 +37,7 @@ def fetch_monday_context():
         }
       }
     }
-    """
+    """ % board_id
     
     deals_data = []
     wo_data = []
@@ -306,7 +307,7 @@ def security_audit():
         {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "event_type": "GRAPHQL_API_QUERY",
-            "details": "Queried monday.com board dynamically (ID: 5030102338, limit: 500 items)",
+            "details": f"Queried monday.com board dynamically (ID: {os.getenv('MONDAY_BOARD_ID', '5030102714')}, limit: 500 items)",
             "checksum": gen_checksum("GRAPHQL_API_QUERY", "Monday.com API Query")
         },
         {

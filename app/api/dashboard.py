@@ -5,10 +5,11 @@ router = APIRouter()
 
 @router.get("/dashboard")
 def dashboard():
-    # Query the new board 5030102338 with limit 500
+    import os
+    board_id = int(os.getenv("MONDAY_BOARD_ID", "5030102714"))
     query = """
     query {
-      boards(ids: 5030102338) {
+      boards(ids: %d) {
         items_page(limit: 500) {
           items {
             id
@@ -25,7 +26,7 @@ def dashboard():
         }
       }
     }
-    """
+    """ % board_id
 
     result = MondayService.execute_query(query)
     items = result["data"]["boards"][0]["items_page"]["items"]
