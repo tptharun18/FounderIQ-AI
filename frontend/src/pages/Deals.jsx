@@ -104,10 +104,12 @@ function Deals() {
               }}
             >
               <tr>
-                <th style={{ padding: "14px" }}>Name</th>
-                <th style={{ padding: "14px" }}>Owner</th>
-                <th style={{ padding: "14px" }}>Status</th>
-                <th style={{ padding: "14px" }}>Due Date</th>
+                <th style={{ padding: "14px", textAlign: "left" }}>Item</th>
+                <th style={{ padding: "14px", textAlign: "left" }}>Value/Cost</th>
+                <th style={{ padding: "14px", textAlign: "left" }}>Deal Stage</th>
+                <th style={{ padding: "14px", textAlign: "left" }}>Sector</th>
+                <th style={{ padding: "14px", textAlign: "left" }}>Owner Code</th>
+                <th style={{ padding: "14px", textAlign: "left" }}>Status Value</th>
               </tr>
             </thead>
 
@@ -119,20 +121,30 @@ function Deals() {
                     borderBottom: "1px solid #eee",
                   }}
                 >
+                  <td style={{ padding: "14px", fontWeight: "600" }}>{deal.name}</td>
                   <td style={{ padding: "14px" }}>
-                    {deal.name}
+                    {isNaN(deal.deal_value) ? deal.deal_value : parseFloat(deal.deal_value).toLocaleString("en-IN", {
+                      style: "currency",
+                      currency: "INR",
+                      maximumFractionDigits: 0
+                    })}
                   </td>
-
+                  <td style={{ padding: "14px" }}>{deal.deal_stage || "-"}</td>
+                  <td style={{ padding: "14px" }}>{deal.sector || "-"}</td>
+                  <td style={{ padding: "14px" }}>{deal.owner || "-"}</td>
                   <td style={{ padding: "14px" }}>
-                    {deal.owner || "-"}
-                  </td>
-
-                  <td style={{ padding: "14px" }}>
-                    {deal.status || "-"}
-                  </td>
-
-                  <td style={{ padding: "14px" }}>
-                    {deal.dueDate || "-"}
+                    <span
+                      style={{
+                        background: deal.status === "Won" ? "#d1fae5" : deal.status === "Dead" ? "#fee2e2" : "#fef3c7",
+                        color: deal.status === "Won" ? "#065f46" : deal.status === "Dead" ? "#991b1b" : "#92400e",
+                        padding: "4px 8px",
+                        borderRadius: "6px",
+                        fontWeight: "600",
+                        fontSize: "12px"
+                      }}
+                    >
+                      {deal.status || "-"}
+                    </span>
                   </td>
                 </tr>
               ))}

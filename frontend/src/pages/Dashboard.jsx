@@ -174,20 +174,43 @@ function Dashboard() {
         >
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Owner</th>
-              <th>Status</th>
-              <th>Due Date</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>Item</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>Value/Cost</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>Deal Stage</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>Sector</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>Owner Code</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>Status Value</th>
             </tr>
           </thead>
 
           <tbody>
             {filteredDeals.map((deal) => (
-              <tr key={deal.id}>
-                <td>{deal.name}</td>
-                <td>{deal.owner || "-"}</td>
-                <td>{deal.status || "-"}</td>
-                <td>{deal.dueDate || "-"}</td>
+              <tr key={deal.id} style={{ borderBottom: "1px solid #eee" }}>
+                <td style={{ padding: "10px", fontWeight: "600" }}>{deal.name}</td>
+                <td style={{ padding: "10px" }}>
+                  {isNaN(deal.deal_value) ? deal.deal_value : parseFloat(deal.deal_value).toLocaleString("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                    maximumFractionDigits: 0
+                  })}
+                </td>
+                <td style={{ padding: "10px" }}>{deal.deal_stage || "-"}</td>
+                <td style={{ padding: "10px" }}>{deal.sector || "-"}</td>
+                <td style={{ padding: "10px" }}>{deal.owner || "-"}</td>
+                <td style={{ padding: "10px" }}>
+                  <span
+                    style={{
+                      background: deal.status === "Won" ? "#d1fae5" : deal.status === "Dead" ? "#fee2e2" : "#fef3c7",
+                      color: deal.status === "Won" ? "#065f46" : deal.status === "Dead" ? "#991b1b" : "#92400e",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      fontWeight: "600",
+                      fontSize: "12px"
+                    }}
+                  >
+                    {deal.status || "-"}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>
