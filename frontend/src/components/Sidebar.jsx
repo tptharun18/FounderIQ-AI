@@ -2,6 +2,7 @@ import {
   FaChartBar,
   FaHandshake,
   FaPlus,
+  FaRobot,
 } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
 
@@ -62,6 +63,14 @@ function Sidebar() {
       >
         <FaPlus />
         Create Deal
+      </Link>
+
+      <Link
+        to="/ai-copilot"
+        style={menuItem(location.pathname === "/ai-copilot")}
+      >
+        <FaRobot />
+        AI Copilot
       </Link>
     </div>
   );

@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from app.api.monday import router as monday_router
 from app.api.dashboard import router as dashboard_router
 from app.api.deals import router as deals_router
+from app.api.agent import router as agent_router
 
 app = FastAPI(
     title="FounderIQ AI",
@@ -38,6 +39,7 @@ app.add_middleware(
 app.include_router(monday_router)
 app.include_router(dashboard_router)
 app.include_router(deals_router)
+app.include_router(agent_router)
 
 # -----------------------------
 # React Build Location

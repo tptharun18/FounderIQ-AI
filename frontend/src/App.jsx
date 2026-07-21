@@ -4,6 +4,7 @@ import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Deals from "./pages/Deals";
 import CreateDeal from "./pages/CreateDeal";
+import AICopilot from "./pages/AICopilot";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="deals" element={<Deals />} />
         <Route path="create-deal" element={<CreateDeal />} />
+        <Route path="ai-copilot" element={<AICopilot />} />
       </Route>
 
       {/* Redirect all unknown URLs to Dashboard */}
