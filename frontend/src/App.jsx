@@ -8,11 +8,20 @@ import AICopilot from "./pages/AICopilot";
 import Briefing from "./pages/Briefing";
 import SecurityLogs from "./pages/SecurityLogs";
 import WorkOrders from "./pages/WorkOrders";
+import Login from "./pages/Login";
+
+function ProtectedRoute({ children }) {
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Layout />}>
+      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="deals" element={<Deals />} />
         <Route path="create-deal" element={<CreateDeal />} />
@@ -21,6 +30,8 @@ function App() {
         <Route path="security" element={<SecurityLogs />} />
         <Route path="work-orders" element={<WorkOrders />} />
       </Route>
+
+      <Route path="/login" element={<Login />} />
 
       {/* Redirect all unknown URLs to Dashboard */}
       <Route path="*" element={<Navigate to="/" replace />} />

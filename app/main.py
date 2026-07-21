@@ -9,6 +9,7 @@ from app.api.monday import router as monday_router
 from app.api.dashboard import router as dashboard_router
 from app.api.deals import router as deals_router
 from app.api.agent import router as agent_router
+from app.api.auth import router as auth_router
 
 app = FastAPI(
     title="FounderIQ AI",
@@ -40,6 +41,7 @@ app.include_router(monday_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
 app.include_router(deals_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")
 
 # -----------------------------
 # React Build Location
