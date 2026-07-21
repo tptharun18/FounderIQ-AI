@@ -4,7 +4,7 @@ import {
   FaChartLine,
 } from "react-icons/fa";
 
-function StatCard({ title, value }) {
+function StatCard({ title, value, onClick }) {
   let icon = <FaHandshake size={28} />;
   let color = "#2563eb";
 
@@ -20,6 +20,7 @@ function StatCard({ title, value }) {
 
   return (
     <div
+      onClick={onClick}
       style={{
         background: "white",
         borderRadius: "16px",
@@ -31,6 +32,7 @@ function StatCard({ title, value }) {
         justifyContent: "space-between",
         alignItems: "center",
         transition: "0.3s",
+        cursor: onClick ? "pointer" : "default",
       }}
     >
       <div>

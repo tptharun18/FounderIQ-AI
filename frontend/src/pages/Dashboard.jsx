@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 import StatCard from "../components/StatCard";
@@ -7,6 +8,7 @@ import OwnerChart from "../components/OwnerChart";
 import RecentActivity from "../components/RecentActivity";
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [dashboard, setDashboard] = useState({
     totalDeals: 0,
     deals: [],
@@ -18,6 +20,7 @@ function Dashboard() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [sectorFilter, setSectorFilter] = useState("All");
+  const [modalType, setModalType] = useState(null); // 'owners' | 'stages' | null
 
   useEffect(() => {
     fetchDashboard();
@@ -82,16 +85,19 @@ function Dashboard() {
         <StatCard
           title="Total Deals"
           value={dashboard.totalDeals}
+          onClick={() => navigate("/deals")}
         />
 
         <StatCard
           title="Deal Owners"
           value={Object.keys(dashboard.dealOwners || {}).length}
+          onClick={() => setModalType("owners")}
         />
 
         <StatCard
           title="Pipeline Stages"
           value={Object.keys(dashboard.salesPipeline || {}).length}
+          onClick={() => setModalType("stages")}
         />
       </div>
 
@@ -245,18 +251,101 @@ function Dashboard() {
             ))}
           </tbody>
         </table>
-
-        {filteredDeals.length === 0 && (
-          <p
-            style={{
-              marginTop: 20,
-              textAlign: "center",
-            }}
-          >
-            No deals found.
-          </p>
-        )}
       </div>
+
+      {/* Distribution Modal */}
+      {modalType && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setModalType(null)}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "30px",
+              borderRadius: "16px",
+              width: "450px",
+              maxHeight: "80vh",
+              overflowY: "auto",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+              position: "relative",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              style={{
+                position: "absolute",
+                top: "15px",
+                right: "15px",
+                border: "none",
+                background: "none",
+                fontSize: "20px",
+                cursor: "pointer",
+              }}
+              onClick={() => setModalType(null)}
+            >
+              ✖
+            </button>
+
+            {modalType === "owners" ? (
+              <>
+                <h3 style={{ marginTop: 0, marginBottom: "20px", color: "#111827" }}>
+                  👥 Deal Owners Breakdown
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+                  {Object.entries(dashboard.dealOwners || {}).map(([owner, count]) => {
+                    const pct = ((count / dashboard.totalDeals) * 100).toFixed(1);
+                    return (
+                      <div key={owner}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+                          <span style={{ fontWeight: "600", color: "#374151" }}>{owner}</span>
+                          <span style={{ color: "#6b7280" }}>{count} deals ({pct}%)</span>
+                        </div>
+                        <div style={{ width: "100%", height: "8px", background: "#f3f4f6", borderRadius: "4px" }}>
+                          <div style={{ width: `${pct}%`, height: "100%", background: "#16a34a", borderRadius: "4px" }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 style={{ marginTop: 0, marginBottom: "20px", color: "#111827" }}>
+                  📈 Sales Pipeline Stages Breakdown
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+                  {Object.entries(dashboard.salesPipeline || {}).map(([stage, count]) => {
+                    const pct = ((count / dashboard.totalDeals) * 100).toFixed(1);
+                    return (
+                      <div key={stage}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+                          <span style={{ fontWeight: "600", color: "#374151" }}>{stage}</span>
+                          <span style={{ color: "#6b7280" }}>{count} deals ({pct}%)</span>
+                        </div>
+                        <div style={{ width: "100%", height: "8px", background: "#f3f4f6", borderRadius: "4px" }}>
+                          <div style={{ width: `${pct}%`, height: "100%", background: "#ea580c", borderRadius: "4px" }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
