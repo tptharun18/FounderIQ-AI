@@ -5,6 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import Deals from "./pages/Deals";
 import CreateDeal from "./pages/CreateDeal";
 import AICopilot from "./pages/AICopilot";
+import Briefing from "./pages/Briefing";
+import SecurityLogs from "./pages/SecurityLogs";
 
 function App() {
   return (
@@ -14,6 +16,8 @@ function App() {
         <Route path="deals" element={<Deals />} />
         <Route path="create-deal" element={<CreateDeal />} />
         <Route path="ai-copilot" element={<AICopilot />} />
+        <Route path="briefing" element={<Briefing />} />
+        <Route path="security" element={<SecurityLogs />} />
       </Route>
 
       {/* Redirect all unknown URLs to Dashboard */}

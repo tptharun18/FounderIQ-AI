@@ -3,6 +3,8 @@ import {
   FaHandshake,
   FaPlus,
   FaRobot,
+  FaFileAlt,
+  FaShieldAlt,
 } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
 
@@ -71,6 +73,22 @@ function Sidebar() {
       >
         <FaRobot />
         AI Copilot
+      </Link>
+
+      <Link
+        to="/briefing"
+        style={menuItem(location.pathname === "/briefing")}
+      >
+        <FaFileAlt />
+        Leadership Briefing
+      </Link>
+
+      <Link
+        to="/security"
+        style={menuItem(location.pathname === "/security")}
+      >
+        <FaShieldAlt />
+        Security Logs
       </Link>
     </div>
   );
