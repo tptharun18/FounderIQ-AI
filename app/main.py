@@ -36,10 +36,10 @@ app.add_middleware(
 # -----------------------------
 # API Routes
 # -----------------------------
-app.include_router(monday_router)
-app.include_router(dashboard_router)
-app.include_router(deals_router)
-app.include_router(agent_router)
+app.include_router(monday_router, prefix="/api")
+app.include_router(dashboard_router, prefix="/api")
+app.include_router(deals_router, prefix="/api")
+app.include_router(agent_router, prefix="/api")
 
 # -----------------------------
 # React Build Location
