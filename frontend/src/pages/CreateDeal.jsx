@@ -1,88 +1,185 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
 
-function Deals() {
-  const [deals, setDeals] = useState([]);
-  const [loading, setLoading] = useState(true);
+function CreateDeal() {
+  const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [status, setStatus] = useState("No Status");
+  const [dueDate, setDueDate] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadDeals();
-  }, []);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      alert("Please enter a deal name");
+      return;
+    }
 
-  const loadDeals = async () => {
     try {
-      const response = await api.get("/dashboard");
-      setDeals(response.data.deals || []);
+      setLoading(true);
+      await api.post("/deals", {
+        name,
+        status,
+        dueDate,
+      });
+      alert("Deal created successfully!");
+      navigate("/deals");
     } catch (error) {
-      console.error(error);
-      alert("Failed to load deals");
+      console.error("Error creating deal:", error);
+      alert("Failed to create deal. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <>
+    <div style={{ maxWidth: "600px", margin: "0 auto" }}>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "30px",
+          marginBottom: "25px",
         }}
       >
-        <h1>Deals</h1>
-
-        <Link to="/create-deal">
+        <h1 style={{ margin: 0 }}>Create Deal</h1>
+        <Link to="/deals">
           <button
             style={{
-              background: "#2563eb",
-              color: "white",
+              background: "#6b7280",
+              color: "#fff",
               border: "none",
-              padding: "12px 20px",
+              padding: "10px 18px",
               borderRadius: "8px",
               cursor: "pointer",
             }}
           >
-            + Create Deal
+            Back to Deals
           </button>
         </Link>
       </div>
 
-      {loading ? (
-        <h2>Loading...</h2>
-      ) : (
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            background: "white",
-          }}
-        >
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Owner</th>
-              <th>Status</th>
-              <th>Due Date</th>
-            </tr>
-          </thead>
+      <div
+        style={{
+          background: "#fff",
+          padding: "30px",
+          borderRadius: "12px",
+          boxShadow: "0 5px 15px rgba(0,0,0,.08)",
+        }}
+      >
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              htmlFor="deal-name"
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "bold",
+                color: "#374151",
+              }}
+            >
+              Deal Name
+            </label>
+            <input
+              id="deal-name"
+              type="text"
+              placeholder="Enter deal name..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: "8px",
+                border: "1px solid #ddd",
+                outline: "none",
+              }}
+              required
+            />
+          </div>
 
-          <tbody>
-            {deals.map((deal) => (
-              <tr key={deal.id}>
-                <td>{deal.name}</td>
-                <td>{deal.owner || "-"}</td>
-                <td>{deal.status || "-"}</td>
-                <td>{deal.dueDate || "-"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </>
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              htmlFor="deal-status"
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "bold",
+                color: "#374151",
+              }}
+            >
+              Status
+            </label>
+            <select
+              id="deal-status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: "8px",
+                border: "1px solid #ddd",
+                outline: "none",
+                background: "#fff",
+              }}
+            >
+              <option value="No Status">No Status</option>
+              <option value="Prospect">Prospect</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Won">Won</option>
+              <option value="Lost">Lost</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom: "30px" }}>
+            <label
+              htmlFor="deal-due-date"
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "bold",
+                color: "#374151",
+              }}
+            >
+              Due Date
+            </label>
+            <input
+              id="deal-due-date"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: "8px",
+                border: "1px solid #ddd",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              background: "#2563eb",
+              color: "#fff",
+              border: "none",
+              padding: "14px",
+              borderRadius: "8px",
+              cursor: loading ? "not-allowed" : "pointer",
+              fontWeight: "bold",
+              fontSize: "16px",
+              transition: "background 0.2s",
+            }}
+          >
+            {loading ? "Creating..." : "Save Deal"}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
 
-export default Deals;
+export default CreateDeal;
