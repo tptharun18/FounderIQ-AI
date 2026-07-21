@@ -42,7 +42,7 @@ app.include_router(deals_router)
 # -----------------------------
 # React Build Location
 # -----------------------------
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 FRONTEND_DIST = PROJECT_ROOT / "frontend" / "dist"
 
 print("PROJECT ROOT :", PROJECT_ROOT)
