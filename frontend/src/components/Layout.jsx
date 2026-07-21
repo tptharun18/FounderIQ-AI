@@ -1,13 +1,28 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
-import App from "./App";
-import "./index.css";
+import { Outlet } from "react-router-dom";
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </React.StrictMode>
-);
+import Sidebar from "./Sidebar";
+import Navbar from "./Navbar";
+
+function Layout() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        background: "#f5f7fb",
+      }}
+    >
+      <Sidebar />
+
+      <div style={{ flex: 1 }}>
+        <Navbar />
+
+        <div style={{ padding: "30px" }}>
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Layout;
