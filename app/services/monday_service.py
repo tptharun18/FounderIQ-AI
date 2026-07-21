@@ -61,7 +61,10 @@ class MondayService:
 
         print("\n================ RESPONSE ===============")
         print("STATUS:", response.status_code)
-        print(response.text)
+        try:
+            print(response.text.encode('utf-8', errors='replace').decode('cp1252', errors='replace'))
+        except Exception:
+            print("[Response content omitted due to encoding restrictions]")
         print("=========================================\n")
 
         response.raise_for_status()

@@ -13,12 +13,12 @@ class ChatRequest(BaseModel):
     message: str
 
 def fetch_monday_context():
-    # 1. Fetch Deals
+    # 1. Fetch Deals with limit 500
     deals_query = """
     query {
       boards(ids: 5030093845) {
         name
-        items_page {
+        items_page(limit: 500) {
           items {
             id
             name
@@ -32,12 +32,12 @@ def fetch_monday_context():
     }
     """
     
-    # 2. Fetch Work Orders
+    # 2. Fetch Work Orders with limit 500
     wo_query = """
     query {
       boards(ids: 5030094086) {
         name
-        items_page {
+        items_page(limit: 500) {
           items {
             id
             name
@@ -111,44 +111,112 @@ def fallback_local_agent(user_message: str, data: dict) -> str:
     response = []
     response.append("⚠️ **Notice:** OpenAI API key is missing in the backend `.env` file. Operating in local fallback query matching mode.\n")
     
+    # Analyze Deals
+    active_deals = []
+    empty_deals_count = 0
+    for d in deals:
+        has_val = False
+        for k in ["status", "dueDate", "owner"]:
+            if d.get(k) and d[k].strip() not in ["", "None"]:
+                has_val = True
+                break
+        if has_val:
+            active_deals.append(d)
+        else:
+            empty_deals_count += 1
+            
+    # Analyze Work Orders
+    active_wos = []
+    empty_wos_count = 0
+    for w in wo:
+        has_val = False
+        for k in ["equipment_type", "status", "estimated_cost", "description"]:
+            if w.get(k) and w[k].strip() not in ["", "None"]:
+                has_val = True
+                break
+        if has_val:
+            active_wos.append(w)
+        else:
+            empty_wos_count += 1
+
     if "deal" in msg or "pipeline" in msg or "sales" in msg:
-        response.append(f"### Deals Summary (Sales Pipeline)")
-        response.append(f"Total deals in system: **{len(deals)}**")
-        status_counts = {}
-        for d in deals:
-            st = d.get("status") or "No Status"
-            status_counts[st] = status_counts.get(st, 0) + 1
-        response.append("\n**Pipeline Breakdowns:**")
-        for st, count in status_counts.items():
-            response.append(f"- **{st}**: {count} deals")
+        response.append(f"### 📊 Deals Summary (Sales Pipeline)")
+        response.append(f"Total deals on board: **{len(deals)}**")
+        response.append(f"- **Populated/Active Deals**: {len(active_deals)}")
+        response.append(f"- **Empty placeholder rows**: {empty_deals_count} (imported character names with missing columns)\n")
+        
+        if active_deals:
+            response.append("**Active Deals Details:**")
+            for ad in active_deals:
+                status = ad.get("status") or "No Status"
+                due = ad.get("dueDate") or "No Due Date"
+                owner = ad.get("owner") or "Unassigned"
+                response.append(f"- **{ad['name']}**: Status: `{status}` | Due: `{due}` | Owner: `{owner}`")
+        else:
+            response.append("*(No deals with populated status columns found on the Monday.com board)*")
             
     elif "work order" in msg or "task" in msg or "order" in msg or "equipment" in msg or "cost" in msg:
-        response.append(f"### Work Orders Summary")
-        response.append(f"Total work orders in system: **{len(wo)}**")
+        response.append(f"### 🏗️ Work Orders Summary")
+        response.append(f"Total work orders on board: **{len(wo)}**")
+        response.append(f"- **Populated/Active Work Orders**: {len(active_wos)}")
+        response.append(f"- **Empty placeholder rows**: {empty_wos_count} (imported rows with empty columns)\n")
         
-        # Calculate cost
-        total_cost = 0
-        status_counts = {}
-        for w in wo:
-            st = w.get("status") or "No Status"
-            status_counts[st] = status_counts.get(st, 0) + 1
-            cost_str = w.get("estimated_cost") or "0"
+        if active_wos:
+            total_cost = 0.0
+            response.append("**Active Work Orders Details:**")
+            for aw in active_wos:
+                eq = aw.get("equipment_type") or "Unknown Equipment"
+                status = aw.get("status") or "No Status"
+                cost_str = aw.get("estimated_cost") or "0"
+                priority = aw.get("priority") or "Low"
+                desc = aw.get("description") or "No description"
+                
+                try:
+                    total_cost += float(cost_str.replace(",", "").strip())
+                except ValueError:
+                    pass
+                    
+                response.append(f"- **{aw['name']}** ({eq}): Cost: `${cost_str}` | Status: `{status}` | Priority: `{priority}`\n  *Desc: {desc}*")
+            
+            response.append(f"\n💵 **Total Estimated Cost**: `${total_cost:,.2f}`")
+        else:
+            response.append("*(No work orders with populated data columns found on the Monday.com board)*")
+            
+    elif "update" in msg or "report" in msg or "leader" in msg:
+        response.append(f"### 📈 Executive Leadership Update Report")
+        response.append(f"**Data Source:** Monday.com Boards (Deals & Work Orders)")
+        response.append(f"**Status Date:** Live Query\n")
+        
+        # Aggregate stats
+        total_cost = 0.0
+        for aw in active_wos:
             try:
-                total_cost += float(cost_str.replace(",", "").strip())
+                total_cost += float((aw.get("estimated_cost") or "0").replace(",", "").strip())
             except ValueError:
                 pass
-        
-        response.append(f"Total Estimated Cost: **${total_cost:,.2f}**")
-        response.append("\n**Work Order Statuses:**")
-        for st, count in status_counts.items():
-            response.append(f"- **{st}**: {count} orders")
+                
+        response.append("#### 1. Sales Pipeline Overview")
+        response.append(f"- Total tracking items: **{len(deals)}**")
+        response.append(f"- Active pipeline deals: **{len(active_deals)}**")
+        for ad in active_deals:
+            response.append(f"  * **{ad['name']}**: Status: `{ad.get('status')}` | Owner: `{ad.get('owner')}`")
             
+        response.append("\n#### 2. Project Execution & Costs")
+        response.append(f"- Active projects under execution: **{len(active_wos)}**")
+        response.append(f"- Total project budget estimate: **${total_cost:,.2f}**")
+        for aw in active_wos:
+            response.append(f"  * **{aw['name']}** ({aw.get('equipment_type')}): Status: `{aw.get('status')}` | Cost: `${aw.get('estimated_cost')}`")
+            
+        response.append("\n⚠️ *Caveat: The board contains {empty_deals_count} empty deals and {empty_wos_count} empty work orders due to unmapped CSV columns on import.*")
+        
     else:
         response.append("### Business Intelligence Agent Overview")
         response.append(f"Currently tracking **{len(deals)} deals** and **{len(wo)} work orders** dynamically connected to your Monday.com board.")
+        response.append(f"\n⚠️ **Data Quality Caveat:** out of {len(deals)} deals, only {len(active_deals)} have values. Out of {len(wo)} work orders, only {len(active_wos)} have values. The rest are blank placeholders from import.")
         response.append("\nTry asking things like:")
         response.append("- *How's the sales pipeline looking?*")
         response.append("- *Tell me about our work orders and estimated costs.*")
+        response.append("- *Generate a leadership update report.*")
         
     return "\n".join(response)
 
@@ -161,23 +229,27 @@ def chat(payload: ChatRequest):
         reply = fallback_local_agent(payload.message, data)
         return {"reply": reply}
         
+    # Count variables for system prompt
+    active_deals = [d for d in data["deals"] if d.get("status") or d.get("dueDate")]
+    active_wos = [w for w in data["work_orders"] if w.get("status") or w.get("estimated_cost")]
+    
     system_prompt = f"""You are FounderIQ AI, a highly capable Executive Business Intelligence Copilot.
 Your job is to answer founder-level business queries about sales deals and project work orders.
 You have dynamic access to the live Monday.com boards data provided below.
 
 LIVE DATA CONTEXT:
-1. DEALS BOARD (Sales Pipeline):
-{json.dumps(data["deals"], indent=2)}
+1. DEALS BOARD (Sales Pipeline) - Total Items: {len(data["deals"])}:
+{json.dumps(active_deals, indent=2)}
 
-2. WORK ORDERS BOARD (Project Execution & Cost):
-{json.dumps(data["work_orders"], indent=2)}
+2. WORK ORDERS BOARD (Project Execution & Cost) - Total Items: {len(data["work_orders"])}:
+{json.dumps(active_wos, indent=2)}
 
 DIRECTIONS:
 1. Always be conversational, concise, professional, and insightful.
 2. Answer founder queries directly (e.g. summary metrics, aggregates, and sector health).
-3. If data is incomplete or missing, state the caveat clearly (do not make up numbers).
+3. Always note that out of {len(data["deals"])} deals only {len(active_deals)} are populated, and out of {len(data["work_orders"])} work orders only {len(active_wos)} are populated. Point this out as a clear data quality caveat/caveats to the user.
 4. If a query is ambiguous, ask brief clarifying questions.
-5. Provide actionable insights (e.g., highlighting bottlenecks, heavy workloads, or sales wins) alongside numbers.
+5. Provide actionable insights (e.g. total cost is the sum of active project estimates, highlighting priority bottlenecks) alongside numbers.
 """
 
     headers = {
