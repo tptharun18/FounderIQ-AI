@@ -162,7 +162,19 @@ def get_work_orders():
                 if item["name"].lower() not in ["deal name", "deal name masked"]:
                     filtered_items.append(item)
                     
-        board["items_page"]["items"] = filtered_items
-        return {"boards": [board]}
+        parsed_work_orders = []
+        for item in filtered_items:
+            cols = {cv["id"]: (cv["text"] or "").strip() for cv in item.get("column_values", [])}
+            parsed_work_orders.append({
+                "id": item["id"],
+                "name": item["name"],
+                "client_code": cols.get("text_mm5f1dyf") or "-",
+                "serial_num": cols.get("text_mm5fnr5a") or "-",
+                "sector": cols.get("text_mm5fxv12") or "-",
+                "status": cols.get("text_mm5fj5gd") or "-",
+                "billed_amount": cols.get("text_mm5f67d0") or "0",
+                "personnel_code": cols.get("text_mm5fk8zf") or "-"
+            })
+        return {"work_orders": parsed_work_orders}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

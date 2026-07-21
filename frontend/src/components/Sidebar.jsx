@@ -5,6 +5,7 @@ import {
   FaRobot,
   FaFileAlt,
   FaShieldAlt,
+  FaClipboardList,
 } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
 
@@ -57,6 +58,14 @@ function Sidebar() {
       >
         <FaHandshake />
         Deals
+      </Link>
+
+      <Link
+        to="/work-orders"
+        style={menuItem(location.pathname === "/work-orders")}
+      >
+        <FaClipboardList />
+        Work Orders
       </Link>
 
       <Link
