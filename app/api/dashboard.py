@@ -3,17 +3,20 @@ from app.services.monday_service import MondayService
 
 router = APIRouter()
 
-
 @router.get("/dashboard")
 def dashboard():
-
+    # Query the new board 5030102338 with limit 500
     query = """
     query {
-      boards(ids: 5030093845) {
-        items_page {
+      boards(ids: 5030102338) {
+        items_page(limit: 500) {
           items {
             id
             name
+            group {
+              id
+              title
+            }
             column_values {
               id
               text
@@ -25,7 +28,6 @@ def dashboard():
     """
 
     result = MondayService.execute_query(query)
-
     items = result["data"]["boards"][0]["items_page"]["items"]
 
     deals = []
@@ -33,21 +35,32 @@ def dashboard():
     owners = {}
 
     for item in items:
+        group_id = item.get("group", {}).get("id") or ""
+        group_title = item.get("group", {}).get("title") or ""
+        
+        # We only want Deals group items
+        if "Deal" not in group_title and group_id != "group_mm5fav3p":
+            continue
+            
+        # Ignore placeholder headers
+        if item["name"].lower() in ["deal name", "deal name masked"]:
+            continue
 
         status = "No Status"
         owner = "Unassigned"
         due = ""
 
+        # Map column values based on board 5030102338 mappings:
+        # Status Value -> text_mm5fj5gd
+        # Owner Code -> text_mm5fk8zf
+        # Date -> date4
         for col in item["column_values"]:
-
-            if col["id"] == "status":
+            if col["id"] == "text_mm5fj5gd":
                 status = col["text"] or "No Status"
-
-            if col["id"] == "person":
+            elif col["id"] == "text_mm5fk8zf":
                 owner = col["text"] or "Unassigned"
-
-            if col["id"] == "date":
-                due = col["text"]
+            elif col["id"] == "date4":
+                due = col["text"] or ""
 
         deals.append({
             "id": item["id"],
