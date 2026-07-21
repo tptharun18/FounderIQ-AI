@@ -15,8 +15,7 @@ class ChatRequest(BaseModel):
     message: str
 
 def fetch_monday_context():
-    board_id = int(os.getenv("MONDAY_BOARD_ID", "5030102714"))
-    # Fetch from the new board
+    board_id = int(os.getenv("MONDAY_BOARD_ID", "5030102338"))
     query = """
     query {
       boards(ids: %d) {
@@ -51,18 +50,7 @@ def fetch_monday_context():
                 group_id = item.get("group", {}).get("id") or ""
                 group_title = item.get("group", {}).get("title") or ""
                 
-                # Extract columns
                 cols = {cv["id"]: (cv["text"] or "").strip() for cv in item.get("column_values", [])}
-                
-                # Mapping column IDs based on board 5030102338:
-                # - Client Code: text_mm5f1dyf
-                # - Value/Cost: text_mm5f67d0
-                # - Deal Stage: text_mm5fpxb9
-                # - Sector: text_mm5fxv12
-                # - Owner Code: text_mm5fk8zf
-                # - Serial #: text_mm5fnr5a
-                # - Status Value: text_mm5fj5gd
-                # - Date: date4
                 
                 status_val = cols.get("text_mm5fj5gd") or "No Status"
                 date_val = cols.get("date4") or "No Date"
@@ -94,7 +82,7 @@ def fetch_monday_context():
                         "sector": sector_val,
                         "assigned_to": owner_val,
                         "serial_num": serial_val,
-                        "equipment_type": sector_val  # Map sector to equipment_type for compatibility
+                        "equipment_type": sector_val
                     })
     except Exception as e:
         print("Error fetching monday context:", e)
@@ -106,74 +94,102 @@ def fetch_monday_context():
 
 def fallback_local_agent(user_message: str, data: dict) -> str:
     msg = user_message.lower()
-    deals = data.get("deals", [])
-    wo = data.get("work_orders", [])
+    deals = [d for d in data.get("deals", []) if d["name"].lower() not in ["deal name", "deal name masked"]]
+    wo = [w for w in data.get("work_orders", []) if w["name"].lower() not in ["deal name", "deal name masked"]]
     
-    response = []
-    
-    # Filter active deals (exclude column header imports like "Deal name masked")
-    active_deals = [d for d in deals if d["name"].lower() not in ["deal name", "deal name masked"]]
-    # Filter active work orders
-    active_wos = [w for w in wo if w["name"].lower() not in ["deal name", "deal name masked"]]
-
-    if "deal" in msg or "pipeline" in msg or "sales" in msg:
-        response.append(f"### 📊 Deals Summary (Sales Pipeline)")
-        response.append(f"Total deals tracked: **{len(active_deals)}**\n")
-        
-        if active_deals:
-            response.append("**Top Active Deals (Sample):**")
-            for ad in active_deals[:15]:
-                status = ad.get("status") or "No Status"
-                due = ad.get("dueDate") or "No Date"
-                val = ad.get("deal_value") or "0"
-                response.append(f"- **{ad['name']}**: Status: `{status}` | Sector: `{ad.get('sector')}` | Value: `{val}` | Due: `{due}`")
-            if len(active_deals) > 15:
-                response.append(f"\n*(And {len(active_deals) - 15} more deals...)*")
-        else:
-            response.append("*(No populated deals found on Monday.com)*")
-            
-    elif "work order" in msg or "task" in msg or "order" in msg or "cost" in msg or "receivable" in msg:
-        response.append(f"### 🏗️ Work Orders Summary")
-        response.append(f"Total work orders tracked: **{len(active_wos)}**\n")
-        
-        if active_wos:
-            total_cost = 0.0
-            response.append("**Recent Work Orders (Sample):**")
-            for aw in active_wos[:15]:
-                cost_str = aw.get("estimated_cost") or "0"
-                status = aw.get("status") or "No Status"
-                try:
-                    total_cost += float(cost_str.replace(",", "").strip())
-                except ValueError:
-                    pass
-                response.append(f"- **{aw['name']}** (Serial: `{aw.get('serial_num')}`): Status: `{status}` | Cost: `{cost_str}` | Sector: `{aw.get('sector')}`")
+    # 1. Handle Greetings
+    if any(greet in msg for greet in ["hello", "hi", "hey", "greetings", "good morning", "good afternoon"]):
+        return ("Hello! I am FounderIQ AI, your Executive Intelligence Copilot. "
+                "I am connected to your Monday.com board and ready to give you insights about your "
+                f"**{len(deals)} pipeline deals** and **{len(wo)} active work orders**.\n\n"
+                "You can ask me questions like:\n"
+                "- *Tell me about our mining deals.*\n"
+                "- *What is the status of the Sasuke deal?*\n"
+                "- *What is the total estimated cost of renewables?*")
                 
-            if len(active_wos) > 15:
-                response.append(f"\n*(And {len(active_wos) - 15} more work orders...)*")
+    # 2. Sector Specific Searches (e.g. mining, powerline, renewables, tender)
+    sector_keywords = ["mining", "powerline", "renewables", "tender", "dsp", "construction", "surveillance"]
+    matched_sector = None
+    for sec in sector_keywords:
+        # Match fuzzy spelling (e.g. mainnig -> mining)
+        if sec in msg or (sec == "mining" and "mainn" in msg) or (sec == "renewables" and "renew" in msg):
+            matched_sector = sec
+            break
             
-            # Recalculate total cost from all work orders
-            total_cost_all = 0.0
-            for aw in active_wos:
+    if matched_sector:
+        # Filter both deals and work orders
+        sector_deals = [d for d in deals if matched_sector in d["sector"].lower()]
+        sector_wos = [w for w in wo if matched_sector in w["sector"].lower()]
+        
+        reply = [f"### 🔍 Sector Analysis: {matched_sector.capitalize()}"]
+        
+        if sector_deals:
+            reply.append(f"\nI found **{len(sector_deals)} deals** in the {matched_sector.capitalize()} sector:")
+            for d in sector_deals[:5]:
                 try:
-                    total_cost_all += float((aw.get("estimated_cost") or "0").replace(",", "").strip())
+                    val = float(d['deal_value'])
+                    val_str = f"₹{val:,.2f}"
+                except ValueError:
+                    val_str = d['deal_value']
+                reply.append(f"- **{d['name']}**: Status is `{d['status']}`, valued at `{val_str}` (Stage: `{d['deal_stage']}`).")
+            if len(sector_deals) > 5:
+                reply.append(f"  *And {len(sector_deals) - 5} more deals.*")
+        else:
+            reply.append(f"\nThere are no active pipeline deals recorded in the {matched_sector.capitalize()} sector.")
+            
+        if sector_wos:
+            total_cost = 0.0
+            for w in sector_wos:
+                try:
+                    total_cost += float(w["estimated_cost"].replace(",", "").strip())
                 except ValueError:
                     pass
-            response.append(f"\n💵 **Total Tracked Project Cost (Summed)**: `${total_cost_all:,.2f}`")
+            reply.append(f"\nAdditionally, there are **{len(sector_wos)} work orders** under execution for this sector, totaling **₹{total_cost:,.2f}** in estimated costs:")
+            for w in sector_wos[:5]:
+                reply.append(f"- **{w['name']}** (Serial: `{w['serial_num']}`): Status is `{w['status']}`, Cost: `{w['estimated_cost']}`.")
         else:
-            response.append("*(No populated work orders found on Monday.com)*")
+            reply.append(f"\nNo work orders are currently undergoing execution for {matched_sector.capitalize()}.")
             
-    elif "update" in msg or "report" in msg or "leader" in msg:
-        response.append(generate_leadership_report_markdown(active_deals, active_wos, len(active_deals), len(active_wos)))
-        
-    else:
-        response.append("### FounderIQ AI Copilot")
-        response.append(f"Currently tracking **{len(active_deals)} deals** and **{len(active_wos)} work orders** dynamically loaded from Monday.com.")
-        response.append("\nTry asking:")
-        response.append("- *Show me the sales pipeline deals.*")
-        response.append("- *What is the total estimated cost of work orders?*")
-        response.append("- *Generate a leadership report.*")
-        
-    return "\n".join(response)
+        return "\n".join(reply)
+
+    # 3. Individual Deal name searches (e.g. Sasuke, Naruto, Sakura, Appa, Scooby-Doo)
+    for d in deals:
+        if d["name"].lower() in msg:
+            try:
+                val = float(d['deal_value'])
+                val_str = f"₹{val:,.2f}"
+            except ValueError:
+                val_str = d['deal_value']
+            return (f"### 📁 Deal Record: {d['name']}\n"
+                    f"I located the deal sheet details for **{d['name']}**:\n"
+                    f"- **Status Value**: `{d['status']}`\n"
+                    f"- **Owner Code**: `{d['owner']}`\n"
+                    f"- **Deal Stage**: `{d['deal_stage']}`\n"
+                    f"- **Sector**: `{d['sector']}`\n"
+                    f"- **Value/Cost**: `{val_str}`\n"
+                    f"- **Due Date**: `{d['dueDate']}`")
+
+    # 4. Total Cost queries
+    if any(keyword in msg for keyword in ["total cost", "estimated cost", "budget", "cost total", "how much cost"]):
+        total_cost = 0.0
+        for w in wo:
+            try:
+                total_cost += float(w["estimated_cost"].replace(",", "").strip())
+            except ValueError:
+                pass
+        return (f"### 💵 Aggregated Financial Cost\n"
+                f"The total estimated cost for all **{len(wo)} active work orders** currently loaded in the system is **₹{total_cost:,.2f}**.\n"
+                "Let me know if you would like me to break this cost down by sectors (e.g. Renewables vs Powerline)!")
+
+    # 5. Leadership update request
+    if any(keyword in msg for keyword in ["update", "report", "leadership", "c-suite"]):
+        return generate_leadership_report_markdown(deals, wo, len(deals), len(wo))
+
+    # 6. Default AI conversation overview
+    return ("### FounderIQ Executive Copilot\n"
+            "I'm ready to answer any specific inquiries you have! I can summarize sector performance, "
+            "fetch individual deal details, or perform financial cost aggregations.\n\n"
+            "What would you like me to look up on Monday.com for you?")
 
 def generate_leadership_report_markdown(active_deals, active_wos, total_deals_count, total_wos_count):
     report = []
@@ -197,7 +213,7 @@ def generate_leadership_report_markdown(active_deals, active_wos, total_deals_co
         
     report.append("\n#### 2. Project Execution & Cost Metrics")
     report.append(f"- Total work orders: **{total_wos_count}**")
-    report.append(f"- Aggregated estimated cost: **${total_cost:,.2f}**")
+    report.append(f"- Aggregated estimated cost: **₹{total_cost:,.2f}**")
     for aw in active_wos[:10]:
         report.append(f"  * **{aw['name']}** (Serial: `{aw.get('serial_num')}`): Status: `{aw.get('status')}` | Cost: `{aw.get('estimated_cost')}`")
     if len(active_wos) > 10:
@@ -307,7 +323,7 @@ def security_audit():
         {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "event_type": "GRAPHQL_API_QUERY",
-            "details": f"Queried monday.com board dynamically (ID: {os.getenv('MONDAY_BOARD_ID', '5030102714')}, limit: 500 items)",
+            "details": f"Queried monday.com board dynamically (ID: {os.getenv('MONDAY_BOARD_ID', '5030102338')}, limit: 500 items)",
             "checksum": gen_checksum("GRAPHQL_API_QUERY", "Monday.com API Query")
         },
         {
