@@ -67,7 +67,7 @@ if FRONTEND_DIST.exists():
             name="assets",
         )
 
-    @app.get("/", include_in_schema=False)
+    @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
     async def root():
         return FileResponse(FRONTEND_DIST / "index.html")
 
