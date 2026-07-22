@@ -21,6 +21,7 @@ function Dashboard() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [sectorFilter, setSectorFilter] = useState("All");
   const [modalType, setModalType] = useState(null); // 'owners' | 'stages' | null
+  const [selectedDeal, setSelectedDeal] = useState(null); // deal object | null
 
   useEffect(() => {
     fetchDashboard();
@@ -120,6 +121,7 @@ function Dashboard() {
 
         <RecentActivity
           deals={dashboard.deals || []}
+          onSelectDeal={setSelectedDeal}
         />
       </div>
 
@@ -343,6 +345,117 @@ function Dashboard() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Deal Detail Modal */}
+      {selectedDeal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setSelectedDeal(null)}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "30px",
+              borderRadius: "16px",
+              width: "450px",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+              position: "relative",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              style={{
+                position: "absolute",
+                top: "15px",
+                right: "15px",
+                border: "none",
+                background: "none",
+                fontSize: "20px",
+                cursor: "pointer",
+              }}
+              onClick={() => setSelectedDeal(null)}
+            >
+              ✖
+            </button>
+
+            <h3 style={{ marginTop: 0, marginBottom: "20px", color: "#2563eb" }}>
+              📁 Deal Details: {selectedDeal.name}
+            </h3>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "15px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f3f4f6", paddingBottom: "6px" }}>
+                <span style={{ color: "#6b7280" }}>Value / Cost:</span>
+                <strong style={{ color: "#10b981" }}>
+                  {isNaN(selectedDeal.deal_value) ? selectedDeal.deal_value : parseFloat(selectedDeal.deal_value).toLocaleString("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                    maximumFractionDigits: 0
+                  })}
+                </strong>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f3f4f6", paddingBottom: "6px" }}>
+                <span style={{ color: "#6b7280" }}>Deal Stage:</span>
+                <span style={{ fontWeight: "600", color: "#374151" }}>{selectedDeal.deal_stage || "-"}</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f3f4f6", paddingBottom: "6px" }}>
+                <span style={{ color: "#6b7280" }}>Sector:</span>
+                <span style={{ fontWeight: "600", color: "#374151" }}>{selectedDeal.sector || "-"}</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f3f4f6", paddingBottom: "6px" }}>
+                <span style={{ color: "#6b7280" }}>Owner Code:</span>
+                <span style={{ fontWeight: "600", color: "#374151" }}>{selectedDeal.owner || "-"}</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "6px" }}>
+                <span style={{ color: "#6b7280" }}>Status Value:</span>
+                <span
+                  style={{
+                    background: selectedDeal.status === "Won" ? "#d1fae5" : selectedDeal.status === "Dead" ? "#fee2e2" : "#fef3c7",
+                    color: selectedDeal.status === "Won" ? "#065f46" : selectedDeal.status === "Dead" ? "#991b1b" : "#92400e",
+                    padding: "4px 8px",
+                    borderRadius: "6px",
+                    fontWeight: "600",
+                    fontSize: "12px"
+                  }}
+                >
+                  {selectedDeal.status || "-"}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setSelectedDeal(null)}
+              style={{
+                width: "100%",
+                padding: "10px",
+                background: "#2563eb",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontWeight: "600",
+                cursor: "pointer",
+                marginTop: "20px"
+              }}
+            >
+              Close Details
+            </button>
           </div>
         </div>
       )}
